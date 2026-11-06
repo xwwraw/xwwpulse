@@ -1,0 +1,14 @@
+#  Processes limited while a game runs. Names are exe file names.
+#  [suspend]  frozen completely (NtSuspendProcess), resumed afterwards
+#  [throttle] EcoQoS, very low I/O priority and no dynamic boost
+#  [cores]    moved to the cores the game does not use (other CCD or E-cores)
+#  A process you bring to the front is released at once.
+
+[suspend]
+processes = ["searchindexer.exe", "onedrive.exe", "teams.exe", "ms-teams.exe", "dropbox.exe"]
+
+[throttle]
+processes = ["chrome.exe", "brave.exe", "msedge.exe", "firefox.exe", "discord.exe", "steamwebhelper.exe", "epicwebhelper.exe"]
+
+[cores]
+processes = ["discord.exe", "vesktop.exe", "chrome.exe", "msedge.exe", "brave.exe", "firefox.exe", "opera.exe", "vivaldi.exe", "spotify.exe", "obs64.exe", "steamwebhelper.exe", "epicwebhelper.exe", "telegram.exe", "wallpaper64.exe"]

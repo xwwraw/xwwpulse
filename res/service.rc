@@ -1,0 +1,9 @@
+#include <winres.h>
+#include "version.rc.h"
+
+1 ICON "xwwPulse.ico"
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "service.manifest"
+
+#define XWW_DESCRIPTION "xwwPulse service"
+#define XWW_FILENAME "xwwPulseService.exe"
+#include "version.rc.inc"

@@ -1,0 +1,36 @@
+#  How xwwPulse game mode behaves. xwwPulse rewrites this file when you
+#  change a setting in the app; comments you add are not kept.
+
+[general]
+enabled = true
+pause_on_alt_tab = true          # undo power and background changes while the game is not in front
+notifications = true
+start_with_windows = true        # start the app at sign-in; games are detected only while it runs
+
+[detection]
+min_fps = 20                   # average frames per second that confirm a game
+confirm_seconds = 2           # how long the average is measured
+score_threshold = 3           # heuristic points a candidate needs (see docs/architecture.md)
+game_dirs = []                 # added to the built-in list
+launchers = []
+non_games = []
+
+[power]
+idle_disable = true              # keep cores out of deep C-states while a game runs
+skip_on_battery = true
+
+[gpu]
+process_priority = "high"          # normal | above_normal | high
+priority = "high"                  # GPU scheduling: off | high | realtime (realtime can starve the desktop)
+dwm_mmcss = true
+
+[cpu]
+ccd = "auto"                       # auto (V-Cache CCD on dual-CCD Ryzen, P-cores on Intel hybrid) | ccd0 | vcache | off
+cpu_set_mode = "soft"              # soft: CPU Sets the scheduler may override | hard: affinity mask
+background_cores = true          # the [cores] list in background.toml goes to the cores the game does not use
+thread_boost = false              # hot game threads: no power throttling, own physical core
+thread_boost_with_anticheat = false
+
+[background]
+suspend = true                   # freeze the [suspend] list in background.toml
+throttle = true                  # EcoQoS + very low I/O for the [throttle] list

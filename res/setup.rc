@@ -1,0 +1,12 @@
+//  The two programs come from dist\, which build.ps1 passes as an include path.
+#include <winres.h>
+#include "version.rc.h"
+
+1 ICON "xwwPulse.ico"
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "setup.manifest"
+201 RCDATA "xwwPulseService.exe"
+202 RCDATA "xwwPulse.exe"
+
+#define XWW_DESCRIPTION "xwwPulse Setup"
+#define XWW_FILENAME "xwwPulse-Setup.exe"
+#include "version.rc.inc"

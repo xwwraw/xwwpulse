@@ -1,0 +1,16 @@
+#include <winres.h>
+#include "version.rc.h"
+#include "../src/ui/resources.h"
+
+1 ICON "xwwPulse.ico"
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "dashboard.manifest"
+kImageLogo RCDATA "../branding/logo.png"
+kImageWordmark RCDATA "../branding/logotext.png"
+kFontGeistRegular RCDATA "fonts/Geist-Regular.ttf"
+kFontGeistMedium RCDATA "fonts/Geist-Medium.ttf"
+kFontMonoRegular RCDATA "fonts/GeistMono-Regular.ttf"
+kFontMonoMedium RCDATA "fonts/GeistMono-Medium.ttf"
+
+#define XWW_DESCRIPTION "xwwPulse"
+#define XWW_FILENAME "xwwPulse.exe"
+#include "version.rc.inc"

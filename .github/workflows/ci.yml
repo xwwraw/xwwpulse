@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the version
+        id: version
+        shell: powershell
+        run: Add-Content $env:GITHUB_OUTPUT "version=$((Get-Content version.txt -Raw).Trim())"
+
+      - name: Lint PowerShell
+        shell: powershell
+        run: |
+          Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
+          Invoke-ScriptAnalyzer -Path . -Recurse -Severity Error -EnableExit
+
+      - name: Build
+        shell: powershell
+        run: .\build.ps1
+
+      - name: Render every page
+        shell: powershell
+        run: |
+          $out = Join-Path $env:RUNNER_TEMP 'pages'
+          $p = Start-Process .\dist\xwwPulse.exe -ArgumentList "--render `"$out`"" -Wait -PassThru
+          if ($p.ExitCode -ne 0 -or @(Get-ChildItem $out -Filter *.png).Count -lt 8) { throw 'page rendering failed' }
+
+      - name: Check frame tracking
+        shell: powershell
+        run: .\dist\xwwPulseService.exe --etw-test 3
+
+      # the setup must carry exactly the two programs this run built
+      - name: Check the setup
+        shell: powershell
+        run: |
+          $setup = Get-Item 'dist\xwwPulse-Setup-${{ steps.version.outputs.version }}.exe'
+          if ($setup.VersionInfo.ProductVersion -ne '${{ steps.version.outputs.version }}') { throw "the setup reports version $($setup.VersionInfo.ProductVersion)" }
+          if ($setup.Length -lt ((Get-Item dist\xwwPulseService.exe).Length + (Get-Item dist\xwwPulse.exe).Length)) { throw 'the setup is smaller than the two programs it carries' }
+
+      - name: Install and remove
+        shell: powershell
+        run: |
+          $dir = Join-Path $env:ProgramFiles 'xwwPulse'
+          $p = Start-Process 'dist\xwwPulse-Setup-${{ steps.version.outputs.version }}.exe' -ArgumentList '/silent' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "the setup failed with $($p.ExitCode)" }
+          (Get-Service xwwPulse).WaitForStatus('Running', [TimeSpan]::FromSeconds(30))
+          foreach ($file in 'xwwPulseService.exe', 'xwwPulse.exe', 'uninstall.exe') { if (-not (Test-Path (Join-Path $dir $file))) { throw "$file is missing" } }
+          if (-not (Test-Path (Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs\xwwPulse.lnk'))) { throw 'the Start menu shortcut is missing' }
+          if (-not (Test-Path (Join-Path $env:ProgramData 'xwwPulse\config.toml'))) { throw 'the default settings are missing' }
+          $p = Start-Process (Join-Path $dir 'uninstall.exe') -ArgumentList '/silent', '/purge' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "the uninstall failed with $($p.ExitCode)" }
+          if (Get-Service xwwPulse -ErrorAction SilentlyContinue) { throw 'the service is still registered after the uninstall' }
+          if (Test-Path (Join-Path $env:ProgramData 'xwwPulse')) { throw 'the settings were not purged' }
+          if (Test-Path (Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs\xwwPulse.lnk')) { throw 'the Start menu shortcut is still there' }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xwwPulse-Setup
+          path: |
+            dist/xwwPulse-Setup-${{ steps.version.outputs.version }}.exe
+            dist/xwwPulse-Setup-${{ steps.version.outputs.version }}.exe.sha256
+          if-no-files-found: error
+
+  release:
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: xwwPulse-Setup
+          path: dist
+
+      # the notes are the CHANGELOG.md section of this version
+      - name: Release notes
+        shell: powershell
+        run: |
+          $version = '${{ github.ref_name }}'.TrimStart('v')
+          if ($version -ne '${{ needs.build.outputs.version }}') { throw "the tag $version does not match version.txt (${{ needs.build.outputs.version }})" }
+          $text = (Get-Content CHANGELOG.md -Raw) -replace "`r`n", "`n"
+          $match = [regex]::Match($text, "(?ms)^## $([regex]::Escape($version))\b[^\n]*\n(.*?)(?=^## |\z)")
+          if (-not $match.Success) { throw "CHANGELOG.md has no section for $version" }
+          [IO.File]::WriteAllText("$env:RUNNER_TEMP\notes.md", $match.Groups[1].Value.Trim() + "`n")
+
+      - name: Publish
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = '${{ github.ref_name }}'.TrimStart('v')
+          gh release create '${{ github.ref_name }}' "dist/xwwPulse-Setup-$version.exe" "dist/xwwPulse-Setup-$version.exe.sha256" --title "xwwPulse $version" --notes-file "$env:RUNNER_TEMP\notes.md" --verify-tag
+          if ($LASTEXITCODE -ne 0) { throw 'the release could not be published' }

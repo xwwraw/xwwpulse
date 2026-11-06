@@ -1,0 +1,24 @@
+{
+  "product": "xwwPulse",
+  "tagline": "Game mode for Windows that tunes CPU, GPU and power while you play, then puts it all back.",
+  "category": "Windows app",
+  "version": "v1.0.0",
+  "platforms": "Windows 10 · Windows 11",
+  "sections": [
+    "Download",
+    "What you get",
+    "Getting started",
+    "Documentation",
+    "Everyday use",
+    "Configuration",
+    "Privacy and safety",
+    "Troubleshooting",
+    "Development",
+    "How it works",
+    "Project structure",
+    "Contributing",
+    "License"
+  ],
+  "out": ".github/assets/readme",
+  "logo": "branding/logo.png"
+}
